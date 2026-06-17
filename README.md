@@ -32,7 +32,7 @@
 ```
 Cyber_Security_Checklist/
 ├── 📄 README.md
-├── 🌐 pentest_checklist.html       ← Web App Pentest Checklist (RedOps)
+├── 🌐 pentest_checklist.html       ← Web App Pentest Checklist (Pen Test)
 └── 🔍 email_osint_checklist.html   ← Email OSINT Checklist
 ```
 
@@ -42,7 +42,7 @@ Cyber_Security_Checklist/
 
 # 🌐 Web Application Pentest Checklist
 
-> **RedOps** — OWASP-aligned manual web application penetration testing checklist with 9 phases, 79 checks, and full methodology + command references per phase.
+> **Pen Test** — OWASP-aligned manual web application penetration testing checklist with 9 phases, 79 checks, and full methodology + command references per phase.
 
 ## Overview
 
