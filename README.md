@@ -31,6 +31,7 @@
 
 ```
 Cyber_Security_Checklist/
+├── 📄 index.html                   ← Main Hub (links to all checklists)
 ├── 📄 README.md
 ├── 🌐 pentest_checklist.html       ← Web App Pentest Checklist (Pen Test)
 └── 🔍 email_osint_checklist.html   ← Email OSINT Checklist
@@ -106,6 +107,11 @@ git clone https://github.com/Prathiv-Raj/Cyber_Security_Checklist.git
 cd Cyber_Security_Checklist
 
 # Open in browser (no server needed)
+# Start from the main hub to access both checklists
+xdg-open index.html                    # Linux (recommended)
+open index.html                        # macOS (recommended)
+
+# Or open specific checklists directly:
 xdg-open pentest_checklist.html        # Linux
 open pentest_checklist.html            # macOS
 ```
@@ -185,7 +191,12 @@ python3 ghunt.py email target@gmail.com --json ghunt_output.json
 git clone https://github.com/Prathiv-Raj/Cyber_Security_Checklist.git
 cd Cyber_Security_Checklist
 
-# Open in browser
+# Open in browser (no server needed)
+# Start from the main hub to access both checklists
+xdg-open index.html                    # Linux (recommended)
+open index.html                        # macOS (recommended)
+
+# Or open specific checklists directly:
 xdg-open email_osint_checklist.html   # Linux
 open email_osint_checklist.html       # macOS
 ```
